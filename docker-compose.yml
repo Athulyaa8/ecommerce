@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database Container
+  mongodb:
+    image: mongo:latest
+    container_name: ecommerce-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecommerce-network
+
+  # 2. Spring Boot Backend Container
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-backend
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/ecommerce
+      - SERVER_PORT=8081
+    depends_on:
+      - mongodb
+    networks:
+      - ecommerce-network
+
+  # 3. React Frontend Container (Served by Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - ecommerce-network
+
+volumes:
+  mongo_data:
+
+networks:
+  ecommerce-network:
+    driver: bridge
